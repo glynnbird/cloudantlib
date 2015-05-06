@@ -56,6 +56,7 @@ var getCORS = function(callback) {
     host: account + ".cloudant.com",
     pathname: "/_api/v2/user/config/cors"
   };
+  console.log(obj);
   request.get({ url: url.format(obj), json:true}, function(err, req, body) {
     callback(err, body);
   });
@@ -76,12 +77,35 @@ var setCORS = function(configuration, callback) {
   });
 };
 
+// function from the old Cloudant library to parse an object { account: "myaccount", password: "mypassword"}
+var reconfigure = function (config) {
+  config = JSON.parse(JSON.stringify(config));
+
+  // An account can be just the username, or the full cloudant URL.
+  var match = config.account && config.account.match && config.account.match(/(\w+)\.cloudant\.com/);
+  if (match)
+    config.account = match[1];
+
+  // The username is the account ("foo" for "foo.cloudant.com") or the third-party API key.
+  var username = config.key || config.account;
+
+  // Configure for Cloudant, either authenticated or anonymous.
+  if (config.account && config.password)
+    config.url = 'https://' + encodeURIComponent(username) + ':' + encodeURIComponent(config.password) + '@' + encodeURIComponent(config.account) + '.cloudant.com';
+  else if (config.account)
+    config.url = 'https://' + encodeURIComponent(config.account) + '.cloudant.com';
+
+  return config.url;
+}
+
+// this IS the Cloudant library. It's nano + a few functions
 module.exports = function(credentials) {
   
   // keep a copy of the credentials
-  if (typeof credentials == "string") {
-    cloudant_url = url.parse(credentials);
+  if (typeof credentials == "object") {
+    credentials = reconfigure(credentials);
   }
+  cloudant_url = url.parse(credentials);
   
   // create a nano instance
   var nano = require('nano')(credentials);  

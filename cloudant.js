@@ -77,23 +77,31 @@ var setCORS = function(configuration, callback) {
 };
 
 module.exports = function(credentials) {
-  
+
+  // To allow for current nodejs-cloudant implementation
+  if (typeof credentials == 'object') {
+    var username = credentials.key || credentials.account;
+    cloudant_url = 'https://' + encodeURIComponent(username)
+      + ':' + encodeURIComponent(credentials.password)
+      + '@' + encodeURIComponent(credentials.account) + '.cloudant.com';
+  }
+
   // keep a copy of the credentials
   if (typeof credentials == "string") {
     cloudant_url = url.parse(credentials);
   }
-  
+
   // create a nano instance
-  var nano = require('nano')(credentials);  
-  
+  var nano = require('nano')(credentials);
+
   // add Cloudant-specific functions
   if (cloudant_url.host.match(/cloudant\.com$/)) {
     nano.generateAPIKey = generateAPIKey;
     nano.getSecurity = getSecurity;
     nano.setSecurity = setSecurity;
-    nano.getCORS = getCORS; 
+    nano.getCORS = getCORS;
     nano.setCORS = setCORS;
   }
-  
+
   return nano;
 }

@@ -16,36 +16,6 @@ var generateAPIKey = function(callback) {
   });
 };
 
-// https://docs.cloudant.com/api.html#viewing-permissions
-var getSecurity = function(db, callback) {
-  var account = cloudant_url.auth.split(":")[0];
-  var obj = {
-    protocol: cloudant_url.protocol,
-    auth: cloudant_url.auth,
-    slashes: true,
-    host: account + ".cloudant.com",
-    pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
-  };
-  request.get({ url: url.format(obj), json:true}, function(err, req, body) {
-    callback(err, body);
-  });
-};
-
-// https://docs.cloudant.com/api.html#modifying-permissions
-var setSecurity = function(db, permissions,callback) {
-  var account = cloudant_url.auth.split(":")[0];
-  var obj = {
-    protocol: cloudant_url.protocol,
-    auth: cloudant_url.auth,
-    slashes: true,
-    host: account + ".cloudant.com",
-    pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
-  };
-  request.put({ url: url.format(obj) , json: true, body: {cloudant: permissions} }, function(err, req, body) {
-    callback(err, body);
-  });
-};
-
 // https://docs.cloudant.com/api.html#reading-the-cors-configuration
 var getCORS = function(callback) {
   var account = cloudant_url.auth.split(":")[0];
@@ -56,7 +26,6 @@ var getCORS = function(callback) {
     host: account + ".cloudant.com",
     pathname: "/_api/v2/user/config/cors"
   };
-  console.log(obj);
   request.get({ url: url.format(obj), json:true}, function(err, req, body) {
     callback(err, body);
   });
@@ -98,6 +67,8 @@ var reconfigure = function (config) {
   return config.url;
 }
 
+
+
 // this IS the Cloudant library. It's nano + a few functions
 module.exports = function(credentials) {
   
@@ -110,12 +81,58 @@ module.exports = function(credentials) {
   // create a nano instance
   var nano = require('nano')(credentials);  
   
-  // add Cloudant-specific functions
+  // our own implementation of 'use' e.g. nano.use or nano.db.use
+  // it includes all db-level functions
+  var use = function(db) {
+    
+    // https://docs.cloudant.com/api.html#viewing-permissions
+    var getSecurity = function(callback) {
+      var account = cloudant_url.auth.split(":")[0];
+      var obj = {
+        protocol: cloudant_url.protocol,
+        auth: cloudant_url.auth,
+        slashes: true,
+        host: account + ".cloudant.com",
+        pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
+      };
+      request.get({ url: url.format(obj), json:true}, function(err, req, body) {
+        callback(err, body);
+      });
+    };
+
+    // https://docs.cloudant.com/api.html#modifying-permissions
+    var setSecurity = function(permissions,callback) {
+      var account = cloudant_url.auth.split(":")[0];
+      var obj = {
+        protocol: cloudant_url.protocol,
+        auth: cloudant_url.auth,
+        slashes: true,
+        host: account + ".cloudant.com",
+        pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
+      };
+      request.put({ url: url.format(obj) , json: true, body: {cloudant: permissions} }, function(err, req, body) {
+        callback(err, body);
+      });
+    };
+  
+    // add Cloudant special functions
+    var obj = nano._use(db);
+    obj.getSecurity = getSecurity;
+    obj.setSecurity = setSecurity;
+    
+    return obj;
+  };
+  
+  // intercept calls to nano.use to plugin our extensions
+  nano._use = nano.use;
+  delete nano.use;
+  delete nano.db.use;
+  nano.use = nano.db.use = use;
+
+  // add top-level Cloudant-specific functions
   if (cloudant_url.host.match(/cloudant\.com$/)) {
     nano.generateAPIKey = generateAPIKey;
-    nano.getSecurity = getSecurity;
-    nano.setSecurity = setSecurity;
-    nano.getCORS = getCORS; 
+    nano.getCORS = getCORS;
     nano.setCORS = setCORS;
   }
   

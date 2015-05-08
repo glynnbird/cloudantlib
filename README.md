@@ -36,7 +36,8 @@ cloudant.generateAPIKey(function(err, data) {
 
 ```
 // see who has access to a specific database
-cloudant.getSecurity("mydatabase", function(err, data) {
+var mydb = cloudant.db.use('mydb');
+mydb.getSecurity(function(err, data) {
   console.log(data);
 });
 // { cloudant: { nobody: [ '_reader' ], myaccount: [ '_reader', '_writer', '_admin', '_replicator' ] } }
@@ -47,7 +48,8 @@ cloudant.getSecurity("mydatabase", function(err, data) {
 ```
 // define who has access to a specific database
 var permissions =  { nobody: [ '_reader' ], myaccount: [ '_reader', '_writer', '_admin', '_replicator' ] };
-cloudant.setSecurity("mydatabase", permissions, function(err, data) {
+var mydb = cloudant.db.use('mydb');
+mydb.setSecurity(permissions, function(err, data) {
   console.log(data);
 });
 // { ok: true }

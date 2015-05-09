@@ -2,46 +2,42 @@ var url = require('url'),
  request = require('request'),
  cloudant_url = null;
 
-// https://docs.cloudant.com/api.html#creating-api-keys
-var generate_api_key = function(callback) {
+// generate a request url
+var prepareURL = function(path, account) {
+  var host = "cloudant.com";
+  if (account && account ===true) {
+    host = cloudant_url.auth.split(":")[0] + "." + host;
+  }
   var obj = {
     protocol: cloudant_url.protocol,
     auth: cloudant_url.auth,
     slashes: true,
-    host: "cloudant.com",
-    pathname: "/api/generate_api_key"
+    host: host,
+    pathname: path
   };
-  request.post({ url: url.format(obj), json:true}, function(err, req, body) {
+  return url.format(obj);
+};
+
+// https://docs.cloudant.com/api.html#creating-api-keys
+var generate_api_key = function(callback) {
+  var u = prepareURL("/api/generate_api_key", false)
+  request.post({ url: u, json:true}, function(err, req, body) {
     callback(err, body);
   });
 };
 
 // https://docs.cloudant.com/api.html#reading-the-cors-configuration
 var get_cors = function(callback) {
-  var account = cloudant_url.auth.split(":")[0];
-  var obj = {
-    protocol: cloudant_url.protocol,
-    auth: cloudant_url.auth,
-    slashes: true,
-    host: account + ".cloudant.com",
-    pathname: "/_api/v2/user/config/cors"
-  };
-  request.get({ url: url.format(obj), json:true}, function(err, req, body) {
+  var u = prepareURL("/_api/v2/user/config/cors", true)
+  request.get({ url: u, json:true}, function(err, req, body) {
     callback(err, body);
   });
 };
 
 // https://docs.cloudant.com/api.html#setting-the-cors-configuration
 var set_cors = function(configuration, callback) {
-  var account = cloudant_url.auth.split(":")[0];
-  var obj = {
-    protocol: cloudant_url.protocol,
-    auth: cloudant_url.auth,
-    slashes: true,
-    host: account + ".cloudant.com",
-    pathname: "/_api/v2/user/config/cors"
-  };
-  request.put({ url: url.format(obj), json:true, body: configuration}, function(err, req, body) {
+  var u = prepareURL("/_api/v2/user/config/cors", true)
+  request.put({ url: u, json:true, body: configuration}, function(err, req, body) {
     callback(err, body);
   });
 };
@@ -71,9 +67,7 @@ var reconfigure = function(config) {
     config.url = 'https://' + encodeURIComponent(config.account) + '.cloudant.com';
 
   return config.url;
-}
-
-
+};
 
 // this IS the Cloudant library. It's nano + a few functions
 module.exports = function(credentials) {
@@ -97,30 +91,16 @@ module.exports = function(credentials) {
     
     // https://docs.cloudant.com/api.html#viewing-permissions
     var get_security = function(callback) {
-      var account = cloudant_url.auth.split(":")[0];
-      var obj = {
-        protocol: cloudant_url.protocol,
-        auth: cloudant_url.auth,
-        slashes: true,
-        host: account + ".cloudant.com",
-        pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
-      };
-      request.get({ url: url.format(obj), json:true}, function(err, req, body) {
+      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security", true);
+      request.get({ url: u, json:true}, function(err, req, body) {
         callback(err, body);
       });
     };
 
     // https://docs.cloudant.com/api.html#modifying-permissions
-    var set_security = function(permissions,callback) {
-      var account = cloudant_url.auth.split(":")[0];
-      var obj = {
-        protocol: cloudant_url.protocol,
-        auth: cloudant_url.auth,
-        slashes: true,
-        host: account + ".cloudant.com",
-        pathname: "/_api/v2/db/" + encodeURIComponent(db) + "/_security"
-      };
-      request.put({ url: url.format(obj) , json: true, body: {cloudant: permissions} }, function(err, req, body) {
+    var set_security = function(permissions, callback) {
+      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security", true);
+      request.put({ url: u , json: true, body: {cloudant: permissions} }, function(err, req, body) {
         callback(err, body);
       });
     };
@@ -130,31 +110,16 @@ module.exports = function(credentials) {
     var index = function(definition, callback) {
       
       // if no definition is provided, then the user wants see all the indexes
-      if (typeof definition == "function") {
-        
+      if (typeof definition == "function") {  
         callback = definition;
-        var account = cloudant_url.auth.split(":")[0];
-        var obj = {
-          protocol: cloudant_url.protocol,
-          auth: cloudant_url.auth,
-          slashes: true,
-          host: account + ".cloudant.com",
-          pathname: "/" + encodeURIComponent(db) + "/_index"
-        };
-        request.get({ url: url.format(obj) , json: true}, function(err, req, body) {
+        var u = prepareURL("/" + encodeURIComponent(db) + "/_index", true);
+        request.get({ url: u , json: true}, function(err, req, body) {
           callback(err, body);
         });
       } else {
         // the user wants to create a new index
-        var account = cloudant_url.auth.split(":")[0];
-        var obj = {
-          protocol: cloudant_url.protocol,
-          auth: cloudant_url.auth,
-          slashes: true,
-          host: account + ".cloudant.com",
-          pathname: "/" + encodeURIComponent(db) + "/_index"
-        };
-        request.post({ url: url.format(obj) , json: true, body: definition }, function(err, req, body) {
+        var u = prepareURL("/" + encodeURIComponent(db) + "/_index", true);
+        request.post({ url: u , json: true, body: definition }, function(err, req, body) {
           callback(err, body);
         });
       }
@@ -168,30 +133,17 @@ module.exports = function(credentials) {
       if (!spec.name)
         throw new Error('index.del() must specify a "name" value');
       var type = spec.type || 'json';
-      var account = cloudant_url.auth.split(":")[0];
-      var obj = {
-        protocol: cloudant_url.protocol,
-        auth: cloudant_url.auth,
-        slashes: true,
-        host: account + ".cloudant.com",
-        pathname: "/" + encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name)
-      };
-      request.del({ url: url.format(obj) , json: true }, function(err, req, body) {
+      var path = "/" + encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name);
+      var u = prepareURL(path, true);
+      request.del({ url: u, json: true }, function(err, req, body) {
         callback(err, body);
       });
     };
     
     // https://docs.cloudant.com/api.html#finding-documents-using-an-index
     var find = function(query, callback) {
-      var account = cloudant_url.auth.split(":")[0];
-      var obj = {
-        protocol: cloudant_url.protocol,
-        auth: cloudant_url.auth,
-        slashes: true,
-        host: account + ".cloudant.com",
-        pathname: "/" + encodeURIComponent(db) + "/_find"
-      };
-      request.post({ url: url.format(obj) , json: true, body: query}, function(err, req, body) {
+      var u = prepareURL("/" + encodeURIComponent(db) + "/_find", true);
+      request.post({ url: u , json: true, body: query}, function(err, req, body) {
         callback(err, body);
       });
     };

@@ -124,11 +124,85 @@ module.exports = function(credentials) {
         callback(err, body);
       });
     };
+    
+    // https://docs.cloudant.com/api.html#list-all-indexes &
+    // https://docs.cloudant.com/api.html#creating-a-new-index
+    var index = function(definition, callback) {
+      
+      // if no definition is provided, then the user wants see all the indexes
+      if (typeof definition == "function") {
+        
+        callback = definition;
+        var account = cloudant_url.auth.split(":")[0];
+        var obj = {
+          protocol: cloudant_url.protocol,
+          auth: cloudant_url.auth,
+          slashes: true,
+          host: account + ".cloudant.com",
+          pathname: "/" + encodeURIComponent(db) + "/_index"
+        };
+        request.get({ url: url.format(obj) , json: true}, function(err, req, body) {
+          callback(err, body);
+        });
+      } else {
+        // the user wants to create a new index
+        var account = cloudant_url.auth.split(":")[0];
+        var obj = {
+          protocol: cloudant_url.protocol,
+          auth: cloudant_url.auth,
+          slashes: true,
+          host: account + ".cloudant.com",
+          pathname: "/" + encodeURIComponent(db) + "/_index"
+        };
+        request.post({ url: url.format(obj) , json: true, body: definition }, function(err, req, body) {
+          callback(err, body);
+        });
+      }
+    };
+    
+    // https://docs.cloudant.com/api.html#deleting-an-index
+    var index_del = function(spec, callback) {
+      spec = spec || {}
+      if (!spec.ddoc)
+        throw new Error('index.del() must specify a "ddoc" value');
+      if (!spec.name)
+        throw new Error('index.del() must specify a "name" value');
+      var type = spec.type || 'json';
+      var account = cloudant_url.auth.split(":")[0];
+      var obj = {
+        protocol: cloudant_url.protocol,
+        auth: cloudant_url.auth,
+        slashes: true,
+        host: account + ".cloudant.com",
+        pathname: "/" + encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name)
+      };
+      request.del({ url: url.format(obj) , json: true }, function(err, req, body) {
+        callback(err, body);
+      });
+    };
+    
+    // https://docs.cloudant.com/api.html#finding-documents-using-an-index
+    var find = function(query, callback) {
+      var account = cloudant_url.auth.split(":")[0];
+      var obj = {
+        protocol: cloudant_url.protocol,
+        auth: cloudant_url.auth,
+        slashes: true,
+        host: account + ".cloudant.com",
+        pathname: "/" + encodeURIComponent(db) + "/_find"
+      };
+      request.post({ url: url.format(obj) , json: true, body: query}, function(err, req, body) {
+        callback(err, body);
+      });
+    };
   
     // add Cloudant special functions
     var obj = nano._use(db);
     obj.get_security = get_security;
     obj.set_security = set_security;
+    obj.index = index;
+    obj.index.del = index_del;
+    obj.find = find;
     
     return obj;
   };

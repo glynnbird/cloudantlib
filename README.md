@@ -26,7 +26,7 @@ var cloudant = require('./cloudant.js)(obj);
 
 ```
 // create an API key
-cloudant.generateAPIKey(function(err, data) {
+cloudant.generate_api_key(function(err, data) {
   console.log(data);
 });
 // { password: 'aPio3N4FSUXbLIcl2gnCjRcM', ok: true, key: 'gewgigbwifmwugw' }
@@ -37,7 +37,7 @@ cloudant.generateAPIKey(function(err, data) {
 ```
 // see who has access to a specific database
 var mydb = cloudant.db.use('mydb');
-mydb.getSecurity(function(err, data) {
+mydb.get_security_(function(err, data) {
   console.log(data);
 });
 // { cloudant: { nobody: [ '_reader' ], myaccount: [ '_reader', '_writer', '_admin', '_replicator' ] } }
@@ -49,7 +49,7 @@ mydb.getSecurity(function(err, data) {
 // define who has access to a specific database
 var permissions =  { nobody: [ '_reader' ], myaccount: [ '_reader', '_writer', '_admin', '_replicator' ] };
 var mydb = cloudant.db.use('mydb');
-mydb.setSecurity(permissions, function(err, data) {
+mydb.set_security(permissions, function(err, data) {
   console.log(data);
 });
 // { ok: true }
@@ -59,7 +59,7 @@ mydb.setSecurity(permissions, function(err, data) {
 
 ```
 // get CORS configuration
-cloudant.getCORS(function(err, data) {
+cloudant.get_cors_(function(err, data) {
   console.log(data);
 });
 // { enable_cors: true, allow_credentials: true, origins: [ '*' ] }
@@ -70,7 +70,7 @@ cloudant.getCORS(function(err, data) {
 ```
 // set CORS configuration
 var configuration = { enable_cors: true, allow_credentials: true, origins: [ '*' ] };
-cloudant.setCORS(configuration, function(err,data) {
+cloudant.set_cors_(configuration, function(err,data) {
   console.log(err, data)
 });
 // { ok: true }

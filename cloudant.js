@@ -3,7 +3,7 @@ var url = require('url'),
  cloudant_url = null;
 
 // https://docs.cloudant.com/api.html#creating-api-keys
-var generateAPIKey = function(callback) {
+var generate_api_key = function(callback) {
   var obj = {
     protocol: cloudant_url.protocol,
     auth: cloudant_url.auth,
@@ -17,7 +17,7 @@ var generateAPIKey = function(callback) {
 };
 
 // https://docs.cloudant.com/api.html#reading-the-cors-configuration
-var getCORS = function(callback) {
+var get_cors = function(callback) {
   var account = cloudant_url.auth.split(":")[0];
   var obj = {
     protocol: cloudant_url.protocol,
@@ -32,7 +32,7 @@ var getCORS = function(callback) {
 };
 
 // https://docs.cloudant.com/api.html#setting-the-cors-configuration
-var setCORS = function(configuration, callback) {
+var set_cors = function(configuration, callback) {
   var account = cloudant_url.auth.split(":")[0];
   var obj = {
     protocol: cloudant_url.protocol,
@@ -46,8 +46,14 @@ var setCORS = function(configuration, callback) {
   });
 };
 
+// the /set_permissions API call is deprecated
+var set_permissions = function(opts, callback) {
+  console.error("set_permissions is deprecated. Please use set_security instead");
+  callback(null, null);
+};
+
 // function from the old Cloudant library to parse an object { account: "myaccount", password: "mypassword"}
-var reconfigure = function (config) {
+var reconfigure = function(config) {
   config = JSON.parse(JSON.stringify(config));
 
   // An account can be just the username, or the full cloudant URL.
@@ -85,8 +91,12 @@ module.exports = function(credentials) {
   // it includes all db-level functions
   var use = function(db) {
     
+    // ****************
+    // Functions added to each db e.g. cloudant.use("mydb")
+    // ****************
+    
     // https://docs.cloudant.com/api.html#viewing-permissions
-    var getSecurity = function(callback) {
+    var get_security = function(callback) {
       var account = cloudant_url.auth.split(":")[0];
       var obj = {
         protocol: cloudant_url.protocol,
@@ -101,7 +111,7 @@ module.exports = function(credentials) {
     };
 
     // https://docs.cloudant.com/api.html#modifying-permissions
-    var setSecurity = function(permissions,callback) {
+    var set_security = function(permissions,callback) {
       var account = cloudant_url.auth.split(":")[0];
       var obj = {
         protocol: cloudant_url.protocol,
@@ -117,13 +127,13 @@ module.exports = function(credentials) {
   
     // add Cloudant special functions
     var obj = nano._use(db);
-    obj.getSecurity = getSecurity;
-    obj.setSecurity = setSecurity;
+    obj.get_security = get_security;
+    obj.set_security = set_security;
     
     return obj;
   };
   
-  // intercept calls to nano.use to plugin our extensions
+  // intercept calls to 'nano.use' to plugin our extensions
   nano._use = nano.use;
   delete nano.use;
   delete nano.db.use;
@@ -131,9 +141,10 @@ module.exports = function(credentials) {
 
   // add top-level Cloudant-specific functions
   if (cloudant_url.host.match(/cloudant\.com$/)) {
-    nano.generateAPIKey = generateAPIKey;
-    nano.getCORS = getCORS;
-    nano.setCORS = setCORS;
+    nano.generate_api_key = generate_api_key;
+    nano.get_cors = get_cors;
+    nano.set_cors = set_cors;
+    nano.set_permissions = set_permissions;
   }
   
   return nano;

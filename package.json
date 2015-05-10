@@ -15,7 +15,7 @@
      "database"
    ],
   "dependencies": {
-    "nano": "^6.1.2"
+    "nano": "6.1.2"
   },
   "main": "./cloudant.js",
   "engines": {

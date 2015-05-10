@@ -123,12 +123,10 @@ module.exports = function(credentials) {
   nano.use = nano.db.use = use;
 
   // add top-level Cloudant-specific functions
-  if (cloudant_url.host.match(/cloudant\.com$/)) {
-    nano.generate_api_key = generate_api_key;
-    nano.get_cors = get_cors;
-    nano.set_cors = set_cors;
-    nano.set_permissions = set_permissions;
-  }
+  nano.generate_api_key = generate_api_key;
+  nano.get_cors = get_cors;
+  nano.set_cors = set_cors;
+  nano.set_permissions = set_permissions;
   
   return nano;
 }

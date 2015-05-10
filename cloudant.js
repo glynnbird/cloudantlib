@@ -1,42 +1,20 @@
 var url = require('url'),
- request = require('request'),
+ nano = null;
  cloudant_url = null;
-
-// generate a request url
-var prepareURL = function(path) {
-  var host = cloudant_url.auth.split(":")[0] + "." + "cloudant.com";
-  var obj = {
-    protocol: cloudant_url.protocol,
-    auth: cloudant_url.auth,
-    slashes: true,
-    host: host,
-    pathname: path
-  };
-  return url.format(obj);
-};
 
 // https://docs.cloudant.com/api.html#creating-api-keys
 var generate_api_key = function(callback) {
-  var u = prepareURL("_api/v2/api_keys")
-  request.post({ url: u, json:true}, function(err, req, body) {
-    callback(err, body);
-  });
+  nano.request( { path: "_api/v2/api_keys", method: "post" }, callback);
 };
 
 // https://docs.cloudant.com/api.html#reading-the-cors-configuration
 var get_cors = function(callback) {
-  var u = prepareURL("/_api/v2/user/config/cors")
-  request.get({ url: u, json:true}, function(err, req, body) {
-    callback(err, body);
-  });
+  nano.request({ path: "_api/v2/user/config/cors" }, callback);
 };
 
 // https://docs.cloudant.com/api.html#setting-the-cors-configuration
 var set_cors = function(configuration, callback) {
-  var u = prepareURL("/_api/v2/user/config/cors")
-  request.put({ url: u, json:true, body: configuration}, function(err, req, body) {
-    callback(err, body);
-  });
+  nano.request( { path: "_api/v2/user/config/cors", method: "put", body: configuration }, callback);
 };
 
 // the /set_permissions API call is deprecated
@@ -76,7 +54,7 @@ module.exports = function(credentials) {
   cloudant_url = url.parse(credentials);
   
   // create a nano instance
-  var nano = require('nano')(credentials);  
+  nano = require('nano')(credentials);  
   
   // our own implementation of 'use' e.g. nano.use or nano.db.use
   // it includes all db-level functions
@@ -88,18 +66,12 @@ module.exports = function(credentials) {
     
     // https://docs.cloudant.com/api.html#viewing-permissions
     var get_security = function(callback) {
-      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security");
-      request.get({ url: u, json:true}, function(err, req, body) {
-        callback(err, body);
-      });
+      nano.request( { path: "_api/v2/db/" + encodeURIComponent(db) + "/_security"}, callback);
     };
 
     // https://docs.cloudant.com/api.html#modifying-permissions
     var set_security = function(permissions, callback) {
-      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security");
-      request.put({ url: u , json: true, body: {cloudant: permissions} }, function(err, req, body) {
-        callback(err, body);
-      });
+      nano.request( { path: "_api/v2/db/" + encodeURIComponent(db) + "/_security", method: "put", body: {cloudant: permissions} }, callback);
     };
     
     // https://docs.cloudant.com/api.html#list-all-indexes &
@@ -109,16 +81,10 @@ module.exports = function(credentials) {
       // if no definition is provided, then the user wants see all the indexes
       if (typeof definition == "function") {  
         callback = definition;
-        var u = prepareURL("/" + encodeURIComponent(db) + "/_index");
-        request.get({ url: u , json: true}, function(err, req, body) {
-          callback(err, body);
-        });
+        nano.request({ path: encodeURIComponent(db) + "/_index"}, callback);
       } else {
         // the user wants to create a new index
-        var u = prepareURL("/" + encodeURIComponent(db) + "/_index");
-        request.post({ url: u , json: true, body: definition }, function(err, req, body) {
-          callback(err, body);
-        });
+        nano.request({ path: encodeURIComponent(db) + "/_index", method:"post", body: definition}, callback);
       }
     };
     
@@ -129,20 +95,14 @@ module.exports = function(credentials) {
         throw new Error('index.del() must specify a "ddoc" value');
       if (!spec.name)
         throw new Error('index.del() must specify a "name" value');
-      var type = spec.type || 'json';
-      var path = "/" + encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name);
-      var u = prepareURL(path);
-      request.del({ url: u, json: true }, function(err, req, body) {
-        callback(err, body);
-      });
+      var type = spec.type || 'json';     
+      var path = encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name);
+      nano.request({ path:path, method:"delete"}, callback);
     };
     
     // https://docs.cloudant.com/api.html#finding-documents-using-an-index
     var find = function(query, callback) {
-      var u = prepareURL("/" + encodeURIComponent(db) + "/_find");
-      request.post({ url: u , json: true, body: query}, function(err, req, body) {
-        callback(err, body);
-      });
+      nano.request( { path: encodeURIComponent(db) + "/_find", method: "post", body: query}, callback);
     };
   
     // add Cloudant special functions

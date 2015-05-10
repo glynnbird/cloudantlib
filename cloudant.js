@@ -3,11 +3,8 @@ var url = require('url'),
  cloudant_url = null;
 
 // generate a request url
-var prepareURL = function(path, account) {
-  var host = "cloudant.com";
-  if (account && account ===true) {
-    host = cloudant_url.auth.split(":")[0] + "." + host;
-  }
+var prepareURL = function(path) {
+  var host = cloudant_url.auth.split(":")[0] + "." + "cloudant.com";
   var obj = {
     protocol: cloudant_url.protocol,
     auth: cloudant_url.auth,
@@ -20,7 +17,7 @@ var prepareURL = function(path, account) {
 
 // https://docs.cloudant.com/api.html#creating-api-keys
 var generate_api_key = function(callback) {
-  var u = prepareURL("/api/generate_api_key", false)
+  var u = prepareURL("_api/v2/api_keys")
   request.post({ url: u, json:true}, function(err, req, body) {
     callback(err, body);
   });
@@ -28,7 +25,7 @@ var generate_api_key = function(callback) {
 
 // https://docs.cloudant.com/api.html#reading-the-cors-configuration
 var get_cors = function(callback) {
-  var u = prepareURL("/_api/v2/user/config/cors", true)
+  var u = prepareURL("/_api/v2/user/config/cors")
   request.get({ url: u, json:true}, function(err, req, body) {
     callback(err, body);
   });
@@ -36,7 +33,7 @@ var get_cors = function(callback) {
 
 // https://docs.cloudant.com/api.html#setting-the-cors-configuration
 var set_cors = function(configuration, callback) {
-  var u = prepareURL("/_api/v2/user/config/cors", true)
+  var u = prepareURL("/_api/v2/user/config/cors")
   request.put({ url: u, json:true, body: configuration}, function(err, req, body) {
     callback(err, body);
   });
@@ -91,7 +88,7 @@ module.exports = function(credentials) {
     
     // https://docs.cloudant.com/api.html#viewing-permissions
     var get_security = function(callback) {
-      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security", true);
+      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security");
       request.get({ url: u, json:true}, function(err, req, body) {
         callback(err, body);
       });
@@ -99,7 +96,7 @@ module.exports = function(credentials) {
 
     // https://docs.cloudant.com/api.html#modifying-permissions
     var set_security = function(permissions, callback) {
-      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security", true);
+      var u = prepareURL("/_api/v2/db/" + encodeURIComponent(db) + "/_security");
       request.put({ url: u , json: true, body: {cloudant: permissions} }, function(err, req, body) {
         callback(err, body);
       });
@@ -112,13 +109,13 @@ module.exports = function(credentials) {
       // if no definition is provided, then the user wants see all the indexes
       if (typeof definition == "function") {  
         callback = definition;
-        var u = prepareURL("/" + encodeURIComponent(db) + "/_index", true);
+        var u = prepareURL("/" + encodeURIComponent(db) + "/_index");
         request.get({ url: u , json: true}, function(err, req, body) {
           callback(err, body);
         });
       } else {
         // the user wants to create a new index
-        var u = prepareURL("/" + encodeURIComponent(db) + "/_index", true);
+        var u = prepareURL("/" + encodeURIComponent(db) + "/_index");
         request.post({ url: u , json: true, body: definition }, function(err, req, body) {
           callback(err, body);
         });
@@ -134,7 +131,7 @@ module.exports = function(credentials) {
         throw new Error('index.del() must specify a "name" value');
       var type = spec.type || 'json';
       var path = "/" + encodeURIComponent(db) + "/_index/" + encodeURIComponent(spec.ddoc) + "/" + encodeURIComponent(type) + "/" + encodeURIComponent(spec.name);
-      var u = prepareURL(path, true);
+      var u = prepareURL(path);
       request.del({ url: u, json: true }, function(err, req, body) {
         callback(err, body);
       });
@@ -142,7 +139,7 @@ module.exports = function(credentials) {
     
     // https://docs.cloudant.com/api.html#finding-documents-using-an-index
     var find = function(query, callback) {
-      var u = prepareURL("/" + encodeURIComponent(db) + "/_find", true);
+      var u = prepareURL("/" + encodeURIComponent(db) + "/_find");
       request.post({ url: u , json: true, body: query}, function(err, req, body) {
         callback(err, body);
       });

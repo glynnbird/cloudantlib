@@ -59,7 +59,7 @@ mydb.set_security(permissions, function(err, data) {
 
 ```
 // get CORS configuration
-cloudant.get_cors_(function(err, data) {
+cloudant.get_cors(function(err, data) {
   console.log(data);
 });
 // { enable_cors: true, allow_credentials: true, origins: [ '*' ] }
@@ -70,7 +70,7 @@ cloudant.get_cors_(function(err, data) {
 ```
 // set CORS configuration
 var configuration = { enable_cors: true, allow_credentials: true, origins: [ '*' ] };
-cloudant.set_cors_(configuration, function(err,data) {
+cloudant.set_cors(configuration, function(err,data) {
   console.log(err, data)
 });
 // { ok: true }

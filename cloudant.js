@@ -1,7 +1,6 @@
-var url = require('url'),
+var package = require('./package.json'),
  nano = null;
- cloudant_url = null;
-
+ 
 // https://docs.cloudant.com/api.html#creating-api-keys
 var generate_api_key = function(callback) {
   nano.request( { path: "_api/v2/api_keys", method: "post" }, callback);
@@ -25,7 +24,7 @@ var set_permissions = function(opts, callback) {
 
 // function from the old Cloudant library to parse an object { account: "myaccount", password: "mypassword"}
 var reconfigure = function(config) {
-  config = JSON.parse(JSON.stringify(config));
+  config = JSON.parse(JSON.stringify(config)); //clone
 
   // An account can be just the username, or the full cloudant URL.
   var match = config.account && config.account.match && config.account.match(/(\w+)\.cloudant\.com/);
@@ -48,13 +47,16 @@ var reconfigure = function(config) {
 module.exports = function(credentials) {
   
   // keep a copy of the credentials
+  var requestDefaults = {}
   if (typeof credentials == "object") {
+    if (credentials.requestDefaults) {
+      requestDefaults = credentials.requestDefaults;
+    }
     credentials = reconfigure(credentials);
   }
-  cloudant_url = url.parse(credentials);
   
   // create a nano instance
-  nano = require('nano')(credentials);  
+  nano = require('nano')({ url: credentials, requestDefaults: requestDefaults});  
   
   // our own implementation of 'use' e.g. nano.use or nano.db.use
   // it includes all db-level functions
